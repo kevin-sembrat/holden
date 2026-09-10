@@ -37,21 +37,14 @@ else
 fi
 
 # ---- Smallstep CLI + CA (NOTE: do not use 'apt install step' — that's an unrelated KDE package) ----
-if ! command -v step &>/dev/null; then
-  echo "-- Installing Smallstep step-cli --"
-  curl -fsSL https://raw.githubusercontent.com/smallstep/cli/master/scripts/install.sh | bash
-else
-  echo "-- step-cli already installed --"
-fi
-
-if ! command -v step-ca &>/dev/null; then
-  echo "-- Installing step-ca --"
+if ! command -v step &>/dev/null || ! command -v step-ca &>/dev/null; then
+  echo "-- Installing Smallstep step-cli + step-ca --"
   wget -O - https://packages.smallstep.com/keys/apt/repo-signing-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/smallstep.asc
   echo 'deb [signed-by=/usr/share/keyrings/smallstep.asc] https://packages.smallstep.com/stable/debian debs main' | sudo tee /etc/apt/sources.list.d/smallstep.list
   sudo apt update
-  sudo apt install -y step-ca
+  sudo apt install -y step-cli step-ca
 else
-  echo "-- step-ca already installed --"
+  echo "-- step-cli and step-ca already installed --"
 fi
 
 # ---- HashiCorp Vault (air-gap mode) ----
