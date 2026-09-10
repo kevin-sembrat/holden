@@ -1,0 +1,17 @@
+# Private key material and runtime state for the local CA / broker
+# credential layer. Never commit any of this -- see project-holden-scope.md
+# Credential/RBAC Architecture. Config *shape* (ca.json, vault config.hcl)
+# is fine to track; keys, unseal material, and tokens are not.
+broker/infra/step-ca/secrets/
+broker/infra/step-ca/db/
+broker/infra/vault/data/
+broker/infra/vault/tls/
+*.key
+*_key
+*token*
+*unseal*
+*.pem
+
+# personal, not team-shared
+.claude/settings.local.json
+CLAUDE.md

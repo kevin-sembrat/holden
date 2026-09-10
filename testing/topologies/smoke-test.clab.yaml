@@ -1,0 +1,13 @@
+name: holden-smoke-test
+topology:
+  nodes:
+    node1:
+      kind: linux
+      image: debian:stable-slim
+      cmd: sleep infinity
+    node2:
+      kind: linux
+      image: debian:stable-slim
+      cmd: sleep infinity
+  links:
+    - endpoints: ["node1:eth1", "node2:eth1"]

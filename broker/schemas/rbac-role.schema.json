@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://holden.local/schemas/rbac-role.schema.json",
+  "title": "Holden RBAC Role",
+  "description": "Roles are scoped to (segment, device_class), not flat admin/user. The Policy Engine loads these at broker startup; any role granting an action present in the global deny list (broker/config/global-deny-list.yaml) fails config validation at load time rather than at runtime.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["role_id", "scope", "allowed_actions", "max_tier"],
+  "properties": {
+    "role_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+:[a-z0-9-]+$",
+      "description": "Convention: <segment-or-class-scope>:<capability-label>, e.g. core-switches:read-only, edge-nodes:tier3-write."
+    },
+    "description": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segments", "device_classes"],
+      "properties": {
+        "segments": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "Explicit list, no wildcards in v1 -- a role covering multiple segments must list each one, so a config diff always shows the exact blast radius change."
+        },
+        "device_classes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      }
+    },
+    "allowed_actions": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+      "minItems": 1,
+      "description": "Must be a subset of broker/config/action-catalog.yaml entries, and must not intersect the global deny list."
+    },
+    "max_tier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "description": "Ceiling this role can request. Tier 4 (emergency rollback) is not grantable per-role in v1 -- it's a system-level authority, auto-triggered on failed post-change verification or invoked via out-of-band human override, independent of the requesting role."
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Required whenever allowed_actions includes any tier-3 action. Omitted entirely for roles capped at max_tier <= 2.",
+      "required": ["min_approvers"],
+      "properties": {
+        "min_approvers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "approver_roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Human roles (not agent roles) permitted to approve. Approver must not be the same identity that triggered the diagnostic session -- enforced by the Human Approval component, not expressible in this schema."
+        }
+      }
+    },
+    "credential_ttl_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600,
+      "default": 300,
+      "description": "Overrides the CA's default leaf-cert TTL for tier-3 credentials minted under this role. Kept short and role-scoped rather than global, so a wider-blast-radius role can be forced to a tighter TTL."
+    },
+    "circuit_breaker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_consecutive_failures": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3,
+          "description": "Consecutive failed remediations under this role before tier-3 access auto-halts for it."
+        },
+        "max_repeated_rejections": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2,
+          "description": "Times a human can reject the same proposed fix before it's escalated instead of re-proposed."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "max_tier": { "const": 3 } }
+      },
+      "then": {
+        "required": ["approval"]
+      }
+    }
+  ]
+}

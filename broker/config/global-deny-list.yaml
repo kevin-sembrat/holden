@@ -1,0 +1,10 @@
+# Enforced by the Policy Engine before any role lookup happens (fail closed).
+# No role's allowed_actions may include any action listed here -- the broker
+# refuses to start if role config validation finds an intersection.
+# Excluded from the autonomous loop entirely in v1; require out-of-band
+# (e.g. physical console) authorization instead.
+denied_actions:
+  - factory_reset
+  - firmware_flash
+  - local_account_change
+  - local_password_change

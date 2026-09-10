@@ -1,0 +1,59 @@
+[
+  {
+    "_comment": "tier 0 read -- executes immediately under core-switches:read-only, no approval",
+    "intent_id": "a3f1c2e0-1e2d-4b3a-9c6f-000000000001",
+    "timestamp": "2026-09-10T14:02:11Z",
+    "correlation_id": "diag-session-2026-09-10-0007",
+    "action": "show_interface",
+    "target": {
+      "segment": "core",
+      "device_class": "switch",
+      "device_id": "core-sw-04"
+    },
+    "params": { "interface": "GigabitEthernet0/3" },
+    "mode": "execute",
+    "proposed_by": {
+      "agent_session_id": "holden-agent-0091",
+      "model_id": "holden-slm-v1"
+    }
+  },
+  {
+    "_comment": "tier 2 -- dry-run diff only, no device contact, no approval token",
+    "intent_id": "a3f1c2e0-1e2d-4b3a-9c6f-000000000002",
+    "timestamp": "2026-09-10T14:03:44Z",
+    "correlation_id": "diag-session-2026-09-10-0007",
+    "action": "set_vlan",
+    "target": {
+      "segment": "edge",
+      "device_class": "switch",
+      "device_id": "edge-sw-17"
+    },
+    "params": { "interface": "GigabitEthernet0/12", "vlan_id": 20 },
+    "mode": "propose",
+    "justification": "Interface edge-sw-17 Gi0/12 is on VLAN 1 (default) but MAC/DHCP pattern matches the finance VLAN 20 profile seen on sibling ports; likely a missight during last week's patch panel move.",
+    "proposed_by": {
+      "agent_session_id": "holden-agent-0091",
+      "model_id": "holden-slm-v1"
+    }
+  },
+  {
+    "_comment": "tier 3 -- same diff, now with a human approval reference; execute requires approval_token_ref per schema",
+    "intent_id": "a3f1c2e0-1e2d-4b3a-9c6f-000000000003",
+    "timestamp": "2026-09-10T14:11:02Z",
+    "correlation_id": "diag-session-2026-09-10-0007",
+    "action": "set_vlan",
+    "target": {
+      "segment": "edge",
+      "device_class": "switch",
+      "device_id": "edge-sw-17"
+    },
+    "params": { "interface": "GigabitEthernet0/12", "vlan_id": 20 },
+    "mode": "execute",
+    "approval_token_ref": "appr-2026-09-10-000441",
+    "justification": "Interface edge-sw-17 Gi0/12 is on VLAN 1 (default) but MAC/DHCP pattern matches the finance VLAN 20 profile seen on sibling ports; likely a missight during last week's patch panel move.",
+    "proposed_by": {
+      "agent_session_id": "holden-agent-0091",
+      "model_id": "holden-slm-v1"
+    }
+  }
+]

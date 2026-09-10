@@ -1,0 +1,38 @@
+# Example role definitions, one per doc's Credential/RBAC Architecture section.
+# Each entry validates against broker/schemas/rbac-role.schema.json.
+
+- role_id: core-switches:read-only
+  description: Diagnostic visibility into the core switching layer. No probes, no writes.
+  scope:
+    segments: [core]
+    device_classes: [switch]
+  allowed_actions:
+    - show_interface
+    - show_vlan
+    - show_logging
+    - get_running_config
+  max_tier: 0
+
+- role_id: edge-nodes:tier3-write
+  description: Full diagnose-propose-remediate loop on edge access switches.
+  scope:
+    segments: [edge]
+    device_classes: [switch]
+  allowed_actions:
+    - show_interface
+    - show_vlan
+    - show_logging
+    - get_running_config
+    - ping
+    - traceroute
+    - set_vlan
+    - set_acl
+    - set_interface_admin_state
+  max_tier: 3
+  approval:
+    min_approvers: 1
+    approver_roles: [network-oncall]
+  credential_ttl_seconds: 300
+  circuit_breaker:
+    max_consecutive_failures: 3
+    max_repeated_rejections: 2

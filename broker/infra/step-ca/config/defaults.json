@@ -1,0 +1,6 @@
+{
+	"ca-url": "https://localhost:9443",
+	"ca-config": "/home/sembrat/holden_agent/broker/infra/step-ca/config/ca.json",
+	"fingerprint": "ddd26eaad6c25a408273a0348f890487de0f0226d596a180bbdc3c65ea0120b8",
+	"root": "/home/sembrat/holden_agent/broker/infra/step-ca/certs/root_ca.crt"
+}

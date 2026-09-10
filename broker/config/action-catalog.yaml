@@ -1,0 +1,105 @@
+# Vendor-agnostic action catalog. Defines the closed universe of `action`
+# values an intent may reference, each action's base tier, and the shape of
+# its `params`. Vendor-specific command templates (Cisco IOS/IOS-XE for v1)
+# are a separate Whitelist Compiler config, deliberately not defined here --
+# this catalog must stay vendor-parameterized so adding a second vendor
+# later never requires touching it or the intent/RBAC schemas.
+#
+# tier meanings (see project-holden-scope.md):
+#   0 read-only telemetry        1 non-destructive probe
+#   2 proposed remediation       3 approved write
+#
+# mode=propose is always legal for any action regardless of its base tier
+# (it only ever produces a dry-run diff, no device contact). mode=execute
+# is gated by the role's max_tier and, for tier 3, an approval_token_ref.
+
+actions:
+  show_interface:
+    tier: 0
+    description: Read interface status/counters.
+    params_schema:
+      type: object
+      additionalProperties: false
+      required: [interface]
+      properties:
+        interface: { type: string }
+
+  show_vlan:
+    tier: 0
+    description: Read VLAN table.
+    params_schema:
+      type: object
+      additionalProperties: false
+      properties: {}
+
+  show_logging:
+    tier: 0
+    description: Read local device log buffer.
+    params_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        lines: { type: integer, minimum: 1, maximum: 1000, default: 200 }
+
+  get_running_config:
+    tier: 0
+    description: Read running configuration (for RAG/diagnosis context, never for constructing free-text CLI back to the device).
+    params_schema:
+      type: object
+      additionalProperties: false
+      properties: {}
+
+  ping:
+    tier: 1
+    description: Non-destructive reachability probe.
+    params_schema:
+      type: object
+      additionalProperties: false
+      required: [destination]
+      properties:
+        destination: { type: string }
+        count: { type: integer, minimum: 1, maximum: 20, default: 5 }
+
+  traceroute:
+    tier: 1
+    description: Non-destructive path probe.
+    params_schema:
+      type: object
+      additionalProperties: false
+      required: [destination]
+      properties:
+        destination: { type: string }
+
+  set_vlan:
+    tier: 3
+    description: Assign an interface to a VLAN.
+    params_schema:
+      type: object
+      additionalProperties: false
+      required: [interface, vlan_id]
+      properties:
+        interface: { type: string }
+        vlan_id: { type: integer, minimum: 1, maximum: 4094 }
+
+  set_acl:
+    tier: 3
+    description: Apply an ACL to an interface, by reference to a pre-approved named ACL -- never raw ACL body text in params.
+    params_schema:
+      type: object
+      additionalProperties: false
+      required: [interface, acl_name, direction]
+      properties:
+        interface: { type: string }
+        acl_name: { type: string }
+        direction: { type: string, enum: [in, out] }
+
+  set_interface_admin_state:
+    tier: 3
+    description: Administratively enable or disable an interface.
+    params_schema:
+      type: object
+      additionalProperties: false
+      required: [interface, state]
+      properties:
+        interface: { type: string }
+        state: { type: string, enum: [up, down] }

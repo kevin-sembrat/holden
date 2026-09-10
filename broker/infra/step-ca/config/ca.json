@@ -1,0 +1,47 @@
+{
+	"root": "/home/sembrat/holden_agent/broker/infra/step-ca/certs/root_ca.crt",
+	"federatedRoots": null,
+	"crt": "/home/sembrat/holden_agent/broker/infra/step-ca/certs/intermediate_ca.crt",
+	"key": "/home/sembrat/holden_agent/broker/infra/step-ca/secrets/intermediate_ca_key",
+	"address": "127.0.0.1:9443",
+	"insecureAddress": "",
+	"dnsNames": [
+		"localhost",
+		"127.0.0.1"
+	],
+	"logger": {
+		"format": "text"
+	},
+	"db": {
+		"type": "badgerv2",
+		"dataSource": "/home/sembrat/holden_agent/broker/infra/step-ca/db",
+		"badgerFileLoadingMode": ""
+	},
+	"authority": {
+		"provisioners": [
+			{
+				"type": "JWK",
+				"name": "broker-jwk",
+				"key": {
+					"use": "sig",
+					"kty": "EC",
+					"kid": "rR3l64Wg-vPfuKLAGV2hb8fRZKqyIk_RXDbWwxT9hM4",
+					"crv": "P-256",
+					"alg": "ES256",
+					"x": "zTQxiZezlIb6WeInCP_VK0NKuVguATlg90AUTquHH4Q",
+					"y": "uXdcuiJT6bWRie5xtzWE4ZoYKDnO4UbMME6-cCKDOIU"
+				},
+				"encryptedKey": "eyJhbGciOiJQQkVTMi1IUzI1NitBMTI4S1ciLCJjdHkiOiJqd2sranNvbiIsImVuYyI6IkEyNTZHQ00iLCJwMmMiOjYwMDAwMCwicDJzIjoibUlIZ0lzTUFBUWt6MVk0VURnQXh2ZyJ9.9ibRy-qWHtNk2jLh7GeZ9gB9L4e5zQRNAHMQ5pbNVPUsodbUcP64xg.-haAXf94YfAYpBqh.5fNNHH8fjrbhUg1BST36Aw9KZLJOe4Wh-s5pW7p3skRBjBkPiUsJH3K7nHW-VFpzS9R2EJwVFnsYVfLLBmlcvD4jrwsEOoJ31gKCzlc3lEsPnw23A93A13OtsCKedSl5nhrmSDPVigdz0VMh-nLKmqvbcyVnjSLxiOfOK1pmO_HVw0kWFORs0eOthfjQEEML_3kM6m6tcbGUHFSpXfFUtlNKOUf4or1io3gxOCV14KRO7UIacw3aA7WpnVF3ZCVGKoHty5SrCAO-OOeK95IV0OhKcZHC4SF4ExmVq2rGYR1q0fpnN0l1D62ggg-oTSdJV9n0c36913kBC-GPBLQ.5vWVM7HXauNdzM9iBarKzw"
+			}
+		]
+	},
+	"tls": {
+		"cipherSuites": [
+			"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+			"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+		],
+		"minVersion": 1.2,
+		"maxVersion": 1.3,
+		"renegotiation": false
+	}
+}

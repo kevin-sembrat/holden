@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://holden.local/schemas/intent.schema.json",
+  "title": "Holden Structured Intent",
+  "description": "The only object the reasoning layer is allowed to emit toward the broker. Deliberately excludes: tier (derived server-side from `action` by the Policy Engine, never trusted from the caller), vendor (resolved by the broker from its own device inventory keyed on target.device_id, never asserted here), and any credential/secret material (the LLM never holds or transmits credentials).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "intent_id",
+    "timestamp",
+    "correlation_id",
+    "action",
+    "target",
+    "params",
+    "mode",
+    "proposed_by"
+  ],
+  "properties": {
+    "intent_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique per intent. Broker rejects replays of an already-seen intent_id."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Links this intent back to the diagnostic session/report that produced it, for audit trail reconstruction."
+    },
+    "action": {
+      "type": "string",
+      "description": "Abstract action name. Must match an entry in the broker's action catalog (broker/config/action-catalog.yaml). Not a CLI command or command fragment -- the Whitelist Compiler maps action+vendor to a fixed command template. An unrecognized action is rejected at the Intent Receiver before it reaches policy evaluation.",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segment", "device_class", "device_id"],
+      "properties": {
+        "segment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Broker looks this up in its own device inventory to resolve vendor/model/mgmt address. The intent never asserts vendor directly, so a compromised or hallucinating reasoning layer can't talk its way past a vendor-scoped whitelist by just claiming a device is something it isn't."
+        }
+      }
+    },
+    "params": {
+      "type": "object",
+      "description": "Action-specific parameters. Validated by the broker against the per-action param schema referenced in the action catalog entry for `action` -- not accepted as free-form input. Kept generic here because param shape varies per action; the envelope-level schema only guarantees this is a flat, JSON-serializable object (no nested executable content, no shell-like strings)."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["propose", "execute"],
+      "description": "propose: broker computes a dry-run diff only, no device contact (tier <=2, no approval required). execute: broker performs the actual device write (tier 3), and requires approval_token_ref to be present and to verify against the approval log for this exact intent_id."
+    },
+    "approval_token_ref": {
+      "type": "string",
+      "description": "Reference to a signed human-approval record (see rbac-role.schema.json approval block). Required when mode=execute and the resolved tier of `action` (looked up by the Policy Engine from the action catalog, not present in this envelope) is 3. Not enforceable as a static schema conditional here, precisely because tier is deliberately absent from this schema -- the Policy Engine rejects an execute-mode tier-3 intent missing this field at request time. This field is an authorization reference, not a credential -- the broker still mints its own short-lived device credential separately after verifying it."
+    },
+    "justification": {
+      "type": "string",
+      "description": "Free-text rationale surfaced in the approval UI and audit log. Never parsed or executed; purely informational for the human approver."
+    },
+    "proposed_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_session_id", "model_id"],
+      "properties": {
+        "agent_session_id": { "type": "string" },
+        "model_id": { "type": "string" }
+      }
+    }
+  }
+}
