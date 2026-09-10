@@ -39,8 +39,8 @@ fi
 # ---- Smallstep CLI + CA (NOTE: do not use 'apt install step' — that's an unrelated KDE package) ----
 if ! command -v step &>/dev/null || ! command -v step-ca &>/dev/null; then
   echo "-- Installing Smallstep step-cli + step-ca --"
-  wget -O - https://packages.smallstep.com/keys/apt/repo-signing-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/smallstep.asc
-  echo 'deb [signed-by=/usr/share/keyrings/smallstep.asc] https://packages.smallstep.com/stable/debian debs main' | sudo tee /etc/apt/sources.list.d/smallstep.list
+  wget -O - https://packages.smallstep.com/keys/apt/repo-signing-key.gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/smallstep.gpg
+  echo 'deb [signed-by=/usr/share/keyrings/smallstep.gpg] https://packages.smallstep.com/stable/debian debs main' | sudo tee /etc/apt/sources.list.d/smallstep.list
   sudo apt update
   sudo apt install -y step-cli step-ca
 else
@@ -50,7 +50,7 @@ fi
 # ---- HashiCorp Vault (air-gap mode) ----
 if ! command -v vault &>/dev/null; then
   echo "-- Installing Vault --"
-  wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+  wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
   echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
   sudo apt update
   sudo apt install -y vault
