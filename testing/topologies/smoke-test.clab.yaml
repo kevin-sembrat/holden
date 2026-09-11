@@ -5,9 +5,17 @@ topology:
       kind: linux
       image: debian:stable-slim
       cmd: sleep infinity
+      exec:
+        - apt-get update
+        - apt-get install -y iproute2 iputils-ping
+        - ip addr add 192.0.2.1/30 dev eth1
     node2:
       kind: linux
       image: debian:stable-slim
       cmd: sleep infinity
+      exec:
+        - apt-get update
+        - apt-get install -y iproute2 iputils-ping
+        - ip addr add 192.0.2.2/30 dev eth1
   links:
     - endpoints: ["node1:eth1", "node2:eth1"]
