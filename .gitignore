@@ -26,3 +26,6 @@ __pycache__/
 
 # Parser/Tool layer runtime logs -- generated per-run, not source
 parser/logs/
+
+# RAG vector store -- build artifact, regenerate with rag/build_index.py
+rag/vector_store/
