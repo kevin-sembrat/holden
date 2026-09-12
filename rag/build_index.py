@@ -21,16 +21,39 @@ embedding model for this checklist item because:
     the embed step only -- chunking, storage, and retrieval interface don't
     need to change.
 
-Usage: python3 rag/build_index.py
+Usage: python3 rag/build_index.py [--update]
 Reads every *.md/*.txt file under rag/manuals/, chunks by paragraph,
 computes an L2-normalized TF-IDF vector per chunk, and writes
 rag/vector_store/index.json.
+
+On --update (Phase 3, checklist 3.4): accepted for interface compatibility
+with an "add one document without a full rebuild" workflow, but it does
+NOT do a true partial update, and cannot correctly: TF-IDF's idf value
+for a term is log((1+N)/(1+df(term))) + 1 -- a function of document
+frequency across the *entire* corpus. Adding one new document can change
+df for any term it contains, including terms that already exist in other
+documents' chunks, which changes idf for those terms, which changes the
+stored vector of every existing chunk that contains them (not just the
+new one). Appending the new chunk's vector under the *old* idf while
+leaving old vectors alone would produce vectors computed on two
+different, incompatible scales in the same store -- cosine similarity
+between them would be comparing apples to a different fruit, silently.
+That's a correctness bug, not a performance shortcut, so --update
+recomputes the full index, same as the default path. This is a real
+limitation of count-based sparse embeddings specifically: a neural
+embedding model (see the module docstring above) embeds each chunk
+independently of the rest of the corpus, so an actual incremental
+add-one-document update is possible there. At this corpus's size the
+cost difference is unmeasurable anyway -- see the timing note in
+project-holden-scope.md Phase 3 status.
 """
 
+import argparse
 import json
 import math
 import re
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -86,6 +109,14 @@ def build_tfidf(chunks: list) -> dict:
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument(
+        "--update",
+        action="store_true",
+        help="Accepted for an 'add a document' workflow, but performs a full recompute -- see module docstring for why a true partial update isn't valid for TF-IDF.",
+    )
+    args = ap.parse_args()
+
     if not MANUALS_DIR.is_dir():
         print(f"error: manuals directory not found: {MANUALS_DIR}", file=sys.stderr)
         return 1
@@ -94,6 +125,8 @@ def main() -> int:
     if not manual_files:
         print(f"error: no .md/.txt files found under {MANUALS_DIR}", file=sys.stderr)
         return 1
+
+    t0 = time.perf_counter()
 
     all_chunks = []
     for path in manual_files:
@@ -116,10 +149,13 @@ def main() -> int:
         ],
     }
     VECTOR_STORE_FILE.write_text(json.dumps(index, indent=2))
+    elapsed_ms = (time.perf_counter() - t0) * 1000
 
+    mode = "update (full recompute -- see --help)" if args.update else "full rebuild"
     print(
-        f"Indexed {len(all_chunks)} chunks from {len(manual_files)} manuals "
-        f"({len(tfidf['vocabulary'])} vocabulary terms) -> {VECTOR_STORE_FILE}"
+        f"[{mode}] Indexed {len(all_chunks)} chunks from {len(manual_files)} manuals "
+        f"({len(tfidf['vocabulary'])} vocabulary terms) -> {VECTOR_STORE_FILE} "
+        f"in {elapsed_ms:.1f}ms (index/embed work only, excludes interpreter startup)"
     )
     return 0
 

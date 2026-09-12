@@ -1,5 +1,5 @@
 {
-  "_note": "Chunk IDs are positional, assigned by rag/build_index.py in manuals-glob order. Valid against the current rag/manuals/ corpus as of Phase 3.2; re-verify these IDs (via rag/query_index.py or by re-listing the index) if the manuals content changes.",
+  "_note": "Chunk IDs are positional, assigned by rag/build_index.py in manuals-glob order. Valid against the current rag/manuals/ corpus as of Phase 3.4 (5 manuals). CONFIRMED FRAGILE IN PRACTICE: adding rag/manuals/spanning-tree-issues.md in 3.4 silently shifted every chunk ID from position 10 onward (E3/E4/H2 below were wrong until corrected against the post-update index) -- re-verify these IDs any time manuals content changes, don't assume they're stable.",
   "queries": [
     {
       "id": "E1",
@@ -21,7 +21,7 @@
       "id": "E3",
       "difficulty": "easy",
       "query": "syslog severity scale emergency debugging",
-      "expected_chunk_id": 10,
+      "expected_chunk_id": 14,
       "expected_source": "rag/manuals/syslog-message-meanings.md",
       "note": "vocabulary taken straight from the severity-scale paragraph"
     },
@@ -29,7 +29,7 @@
       "id": "E4",
       "difficulty": "easy",
       "query": "VLAN must exist in database before port assignment",
-      "expected_chunk_id": 18,
+      "expected_chunk_id": 22,
       "expected_source": "rag/manuals/vlan-configuration.md",
       "note": "vocabulary taken straight from the VLAN-database paragraph"
     },
@@ -45,7 +45,7 @@
       "id": "H2",
       "difficulty": "harder",
       "query": "What happens if the two ends of a link that carries multiple network segments disagree about which segment handles traffic that isn't explicitly labeled?",
-      "expected_chunk_id": 17,
+      "expected_chunk_id": 21,
       "expected_source": "rag/manuals/vlan-configuration.md",
       "note": "paraphrases the native-VLAN-mismatch paragraph, avoiding 'native/VLAN/802.1Q/trunk/untagged' -- but retains incidental overlap ('ends', 'link', 'disagree', 'traffic')"
     },
@@ -56,6 +56,14 @@
       "expected_chunk_id": 2,
       "expected_source": "rag/manuals/interface-error-counters.md",
       "note": "added after H1/H2 both unexpectedly passed -- deliberately engineered for near-zero token overlap with the target chunk, to actually exercise TF-IDF's known no-shared-vocabulary failure mode"
+    },
+    {
+      "id": "E5",
+      "difficulty": "easy",
+      "query": "portfast enabled on a switch-to-switch link causes an accidental loop",
+      "expected_chunk_id": 13,
+      "expected_source": "rag/manuals/spanning-tree-issues.md",
+      "note": "added in 3.4 -- vocabulary taken straight from the portfast paragraph in the newly added 5th manual"
     }
   ]
 }
