@@ -1,0 +1,18 @@
+{
+  "_comment": "not deny-listed, just never defined in the action catalog -- distinguishes 'unknown' from 'hard-denied'",
+  "intent_id": "b4a2d1f0-0000-0000-0000-000000000003",
+  "timestamp": "2026-09-11T23:49:10Z",
+  "correlation_id": "phase2-2.1-whitelist-check",
+  "action": "reboot_device",
+  "target": {
+    "segment": "lab",
+    "device_class": "containerlab-linux",
+    "device_id": "clab-holden-smoke-test-node1"
+  },
+  "params": {},
+  "mode": "execute",
+  "proposed_by": {
+    "agent_session_id": "phase2-dev",
+    "model_id": "n/a"
+  }
+}

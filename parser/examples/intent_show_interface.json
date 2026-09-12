@@ -1,0 +1,18 @@
+{
+  "_comment": "whitelisted, tier 0 -- targets the live Phase 1 smoke-test node",
+  "intent_id": "b4a2d1f0-0000-0000-0000-000000000001",
+  "timestamp": "2026-09-11T23:49:00Z",
+  "correlation_id": "phase2-2.1-whitelist-check",
+  "action": "show_interface",
+  "target": {
+    "segment": "lab",
+    "device_class": "containerlab-linux",
+    "device_id": "clab-holden-smoke-test-node1"
+  },
+  "params": { "interface": "eth1" },
+  "mode": "execute",
+  "proposed_by": {
+    "agent_session_id": "phase2-dev",
+    "model_id": "n/a"
+  }
+}

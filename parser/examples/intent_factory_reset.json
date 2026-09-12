@@ -1,0 +1,18 @@
+{
+  "_comment": "hard deny-listed AND absent from the action catalog -- targets the same live node",
+  "intent_id": "b4a2d1f0-0000-0000-0000-000000000002",
+  "timestamp": "2026-09-11T23:49:05Z",
+  "correlation_id": "phase2-2.1-whitelist-check",
+  "action": "factory_reset",
+  "target": {
+    "segment": "lab",
+    "device_class": "containerlab-linux",
+    "device_id": "clab-holden-smoke-test-node1"
+  },
+  "params": {},
+  "mode": "execute",
+  "proposed_by": {
+    "agent_session_id": "phase2-dev",
+    "model_id": "n/a"
+  }
+}

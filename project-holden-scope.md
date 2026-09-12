@@ -137,6 +137,22 @@ which are reachable):
   Phase 1). No test device exists yet, so the broker's device-connection
   path itself is still unexercised beyond the Vault credential fetch.
 
+**Open item, deliberately not resolved — flagged so it doesn't get lost
+now that Phases 0/1 are behind us:** `setup.sh` only installs the
+step-ca/Vault *binaries*. There is still no scripted, or even documented
+manual, path from a fresh clone to a working CA plus an
+initialized-and-unsealed Vault with the `broker-edge` AppRole/policy
+loaded — the current running instances on `cyber` were brought up by
+hand during Phase 0 and that setup lives only in this host's state (root
+CA/intermediate keys, Shamir unseal shares, root token, AppRole
+role_id/secret_id — all correctly gitignored per the Credential/RBAC
+architecture above, which is exactly why none of it travels with a
+clone). A second person, or this same host after a wipe, has no way to
+reconstruct a working broker credential layer from the repo alone right
+now. Not a blocker for Phase 2 (which doesn't need live Vault/CA), but
+must be closed — either a scripted init or a written runbook — before
+this project can be considered new-user ready.
+
 ---
 
 ## Testing Infrastructure
@@ -250,26 +266,60 @@ fixed. No open follow-ups from Phase 1 itself; Phase 0's kill-switch
 follow-up (see Circuit breaker above) is still the one item carried
 forward, and this harness is what it's waiting on.
 
-**Regression fixed 2026-09-11, noted here so it isn't reintroduced:** a
-later edit to `smoke-test.clab.yaml` added an `exec:` block running
-`apt-get update && apt-get install -y iproute2 iputils-ping` inside each
-node before addressing `eth1`. This silently failed (no package-mirror
-access from node containers — the exact constraint already documented
-above under 1.2/1.3), leaving both nodes without `ip`/`ping` and no
-address on `eth1`, so every connectivity/fault-injection check failed.
-Fixed per the standing rule ("images with required tooling baked in at
-build time, not installed at deploy/runtime"): `node1`/`node2` now run a
-locally built `holden-smoke-node:latest` image (built by
-`testing/topologies/build-smoke-image.sh`, offline — it copies the
-host's already-installed static `busybox` binary into a container built
-`FROM` the already-cached `debian:stable-slim`, no network access
-required), and `exec:` only calls `busybox ip addr add ...`. Re-ran the
-full 1.2–1.5 sequence against this fix: deploy 0.46s, 4/4 ping 0% loss,
-netem 50ms delay confirmed from both vantage points (tc qdisc inside the
-node netns and via `containerlab tools netem show` from the host), clean
-destroy leaves no containers/netns/networks behind. Run
-`./testing/topologies/build-smoke-image.sh` once before `deploy` on any
-fresh checkout or after pruning the `holden-smoke-node` image.
+**Regression found and fully resolved 2026-09-11, on the dev workstation
+(hostname `cyber`) — noted here so it isn't reintroduced:** a later edit
+to `smoke-test.clab.yaml` added an `exec:` block running `apt-get update
+&& apt-get install -y iproute2 iputils-ping` inside each node before
+addressing `eth1`. In practice this didn't fail fast, it **hung** —
+matching the same failure class already flagged once above for
+containerlab's own version-check.
+
+**Root cause, confirmed (not guessed):** DNS resolution for the Debian
+mirror does not fail — `getent hosts deb.debian.org` inside a node
+container returns real answers — but those answers are IPv6-only
+(Fastly anycast addresses via static host entries inherited from the
+container's resolver config), and this network has no usable outbound
+IPv6 path. `apt-get` therefore doesn't get a clean connection-refused or
+DNS failure to fail on; it blocks in `connect()` against an
+address it can never reach until the OS-level TCP timeout finally
+expires (multiple minutes per exec step, times two exec steps per node).
+That is the literal mechanism behind "no package-mirror access from node
+containers," already documented above — this is the first time it was
+traced to the specific IPv6-blackhole shape rather than just observed as
+a hang.
+
+**Fix**, per the project's own standing rule ("images with required
+tooling baked in at build time, not installed at deploy/runtime"):
+`node1`/`node2` now run a locally built `holden-smoke-node:latest` image
+(built by `testing/topologies/build-smoke-image.sh`, fully offline — it
+copies the host's already-installed static `busybox` binary, which
+bundles `ip`/`ping`/`tc` applets, into a container built `FROM` the
+already-locally-cached `debian:stable-slim`; no network access of any
+kind is required to build it). `exec:` now only calls `busybox ip addr
+add ...` — no package manager involved, nothing to hang on.
+
+**Final verified results on `cyber`,** full 1.2–1.5 sequence re-run
+against the fix, fresh from a clean `destroy --cleanup`:
+- 1.2 deploy: 0.458s, both nodes `running` immediately, no exec-step
+  delay of any kind.
+- 1.3 connectivity: `busybox ping -c4 192.0.2.2` from node1 → 4/4
+  packets, 0% loss, ~0.1ms RTT.
+- 1.4 fault injection: `containerlab tools netem set` applied 50ms delay
+  + 10% loss to node1's `eth1`; confirmed from two independent vantage
+  points (`tc qdisc show` inside the node's own netns via `busybox tc`,
+  and `containerlab tools netem show` from the host) — both agree on
+  `delay 50ms loss 10.00%`. Functional effect confirmed: RTT under
+  impairment rose to ~50ms over 20 pings (0% observed loss this run —
+  expected sampling variance at p=0.1, n=20). Reset afterward, confirmed
+  back to `qdisc noqueue`.
+- 1.5 destroy: clean on all three fronts — no `clab-*` containers, no
+  leftover `ip netns`, no leftover `clab` docker network.
+
+Run `./testing/topologies/build-smoke-image.sh` once before `deploy` on
+any fresh checkout or after pruning the `holden-smoke-node` image.
+
+**Phase 1 is now fully complete, including this regression's resolution.**
+No open follow-ups from Phase 1 itself.
 
 ---
 
