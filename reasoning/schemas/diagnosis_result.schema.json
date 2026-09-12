@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://holden.local/schemas/diagnosis_result.schema.json",
+  "title": "Holden Diagnosis Result",
+  "description": "The reasoning core's output for one diagnostic pass (Phase 4). Deliberately NOT broker/schemas/intent.schema.json and not a subtype of it: an intent is a request for the broker to DO something (even a tier-0 read), validated against the action catalog and tier/RBAC rules; a diagnosis is an assessment of already-collected telemetry -- a claim about system state, with evidence and a confidence level, that may or may not point at any catalog action at all (e.g. a duplex mismatch's real fix is a physical cable/NIC swap, which isn't in the whitelist and never will be). Forcing a diagnosis into the intent shape would mean inventing a fake action/mode/approval_token_ref for something that isn't a device-write request, which is a semantic misuse of that schema, not a reuse of it. Remediation proposal + approval (turning a diagnosis into an actual intent) is Phase 5's job, not this schema's. Where reuse *does* make sense -- the target device shape -- this schema deliberately mirrors intent.schema.json's `target` object field-for-field. diagnosis_id/timestamp/correlation_id/target are populated by the calling harness, not requested from the model: this mirrors the project's own Credential/RBAC principle of not trusting the reasoning layer with fields it doesn't need to reason about, and avoids relying on a 1B model to fabricate a well-formed UUID or an accurate timestamp, which is exactly the kind of formatting detail small models get unreliably right. The model is responsible only for finding/confidence/evidence/explanation/recommended_action.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "diagnosis_id",
+    "timestamp",
+    "correlation_id",
+    "target",
+    "based_on",
+    "finding",
+    "confidence",
+    "evidence",
+    "recommended_action"
+  ],
+  "properties": {
+    "diagnosis_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Harness-generated, not model-generated."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Harness-generated, not model-generated."
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Harness-supplied, links back to the diagnostic session -- same field/purpose as broker/schemas/intent.schema.json's correlation_id."
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segment", "device_class", "device_id"],
+      "description": "Harness-supplied. Field-for-field identical to broker/schemas/intent.schema.json's target object -- deliberate reuse, not coincidence.",
+      "properties": {
+        "segment": { "type": "string", "minLength": 1 },
+        "device_class": { "type": "string", "minLength": 1 },
+        "device_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "based_on": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "interface"],
+      "description": "Harness-supplied. Which parser/tool-layer result (broker/config/action-catalog.yaml action + interface) this diagnosis was computed from.",
+      "properties": {
+        "action": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "interface": { "type": "string" }
+      }
+    },
+    "finding": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Model output. Short label for the diagnosed condition, e.g. 'duplex_mismatch'."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Model output."
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Model output. Specific observed values from the input data that support the finding -- not a restatement of the finding itself."
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Model output. Free-text reasoning. Optional -- evidence + finding + confidence are the load-bearing fields."
+    },
+    "recommended_action": {
+      "type": ["string", "null"],
+      "description": "Model output. Must be either null (no automated action applies -- e.g. this fault needs physical intervention) or an exact action name from broker/config/action-catalog.yaml. Cross-checked against the real catalog by the harness, not just schema-shape-validated here, since this schema alone can't express 'one of the current catalog entries' without duplicating the catalog."
+    }
+  }
+}

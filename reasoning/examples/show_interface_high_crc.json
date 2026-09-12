@@ -1,0 +1,16 @@
+{
+  "interface": "GigabitEthernet0/3",
+  "admin_state": "up",
+  "oper_state": "up",
+  "mac_address": "00:1a:2b:3c:4d:5e",
+  "mtu": 1500,
+  "ipv4_addresses": [{ "address": "10.20.30.5", "prefix_length": 24 }],
+  "ipv6_addresses": [],
+  "counters": {
+    "input_errors": 15234,
+    "crc_errors": 14980,
+    "frame_errors": 14210,
+    "runts": 12,
+    "giants": 0
+  }
+}

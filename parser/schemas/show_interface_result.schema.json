@@ -53,6 +53,18 @@
           "scope": { "type": "string", "description": "e.g. link, global -- as reported by 'ip addr show'." }
         }
       }
+    },
+    "counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Error/traffic counters (Phase 4.2 addition). Optional and absent from every existing fixture: the Phase 1 lab's Linux 'ip addr show' source doesn't report these, but a real Cisco IOS-XE 'show interface' does, and Phase 4's reasoning core needs exactly this data to diagnose link-layer faults (see rag/manuals/interface-error-counters.md). Field names match that manual's terminology directly.",
+      "properties": {
+        "input_errors": { "type": "integer", "minimum": 0 },
+        "crc_errors": { "type": "integer", "minimum": 0 },
+        "frame_errors": { "type": "integer", "minimum": 0 },
+        "runts": { "type": "integer", "minimum": 0 },
+        "giants": { "type": "integer", "minimum": 0 }
+      }
     }
   }
 }
