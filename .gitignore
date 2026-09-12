@@ -15,3 +15,7 @@ broker/infra/vault/tls/
 # personal, not team-shared
 .claude/settings.local.json
 CLAUDE.md
+
+# containerlab-generated per-run lab state (SSH configs, TLS material,
+# inventories) -- regenerated on every deploy, not source
+testing/topologies/clab-*/

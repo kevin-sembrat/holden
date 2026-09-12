@@ -250,6 +250,27 @@ fixed. No open follow-ups from Phase 1 itself; Phase 0's kill-switch
 follow-up (see Circuit breaker above) is still the one item carried
 forward, and this harness is what it's waiting on.
 
+**Regression fixed 2026-09-11, noted here so it isn't reintroduced:** a
+later edit to `smoke-test.clab.yaml` added an `exec:` block running
+`apt-get update && apt-get install -y iproute2 iputils-ping` inside each
+node before addressing `eth1`. This silently failed (no package-mirror
+access from node containers — the exact constraint already documented
+above under 1.2/1.3), leaving both nodes without `ip`/`ping` and no
+address on `eth1`, so every connectivity/fault-injection check failed.
+Fixed per the standing rule ("images with required tooling baked in at
+build time, not installed at deploy/runtime"): `node1`/`node2` now run a
+locally built `holden-smoke-node:latest` image (built by
+`testing/topologies/build-smoke-image.sh`, offline — it copies the
+host's already-installed static `busybox` binary into a container built
+`FROM` the already-cached `debian:stable-slim`, no network access
+required), and `exec:` only calls `busybox ip addr add ...`. Re-ran the
+full 1.2–1.5 sequence against this fix: deploy 0.46s, 4/4 ping 0% loss,
+netem 50ms delay confirmed from both vantage points (tc qdisc inside the
+node netns and via `containerlab tools netem show` from the host), clean
+destroy leaves no containers/netns/networks behind. Run
+`./testing/topologies/build-smoke-image.sh` once before `deploy` on any
+fresh checkout or after pruning the `holden-smoke-node` image.
+
 ---
 
 ## Risks
