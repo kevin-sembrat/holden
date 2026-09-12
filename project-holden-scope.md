@@ -384,3 +384,19 @@ No open follow-ups from Phase 1 itself.
    **Resolved 2026-09-10: Vault in air-gap mode for v1**, no HSM. Vault's
    policy/audit hooks line up with broker RBAC enforcement; HSM revisited
    only if the project moves toward a hardware-certified deployment.
+9. **Pre-existing abliterated model on the dev workstation, open —
+   decision needed, not made here.** Phase 4.1 (2026-09-12) found Ollama
+   already installed and running on `cyber` with a model already pulled:
+   `hf.co/huihui-ai/Huihui-gpt-oss-20b-BF16-abliterated:Q4_K_M` (20B
+   params, 15GB) -- a third-party model with safety training deliberately
+   removed ("abliterated"). It predates this project's Phase 4 work, is
+   unused by anything in this repo, and is far larger than the 1-3B
+   placeholder model (`llama3.2:1b`) actually in use for pipeline
+   development. Two options on the table, deliberately not chosen here:
+   remove it (`ollama rm hf.co/huihui-ai/Huihui-gpt-oss-20b-BF16-abliterated:Q4_K_M`),
+   or keep it and explicitly document why a safety-stripped model is
+   acceptable to leave present, unused, on a host intended for this
+   project. Given the project's own threat model (Risks: "the agent/broker
+   host is the highest-value target on the LAN") and that safety-stripped
+   models are an unusual thing to find on a host with any relationship to
+   an autonomous ICS agent, this should not be left ambiguous.
