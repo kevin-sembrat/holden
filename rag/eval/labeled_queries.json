@@ -1,0 +1,61 @@
+{
+  "_note": "Chunk IDs are positional, assigned by rag/build_index.py in manuals-glob order. Valid against the current rag/manuals/ corpus as of Phase 3.2; re-verify these IDs (via rag/query_index.py or by re-listing the index) if the manuals content changes.",
+  "queries": [
+    {
+      "id": "E1",
+      "difficulty": "easy",
+      "query": "duplex mismatch CRC frame errors late collisions",
+      "expected_chunk_id": 2,
+      "expected_source": "rag/manuals/interface-error-counters.md",
+      "note": "vocabulary taken straight from the duplex-mismatch paragraph"
+    },
+    {
+      "id": "E2",
+      "difficulty": "easy",
+      "query": "OSPF area ID BGP autonomous system hello dead timer neighbor",
+      "expected_chunk_id": 7,
+      "expected_source": "rag/manuals/routing-protocol-troubleshooting.md",
+      "note": "vocabulary taken straight from the neighbor-relationship paragraph"
+    },
+    {
+      "id": "E3",
+      "difficulty": "easy",
+      "query": "syslog severity scale emergency debugging",
+      "expected_chunk_id": 10,
+      "expected_source": "rag/manuals/syslog-message-meanings.md",
+      "note": "vocabulary taken straight from the severity-scale paragraph"
+    },
+    {
+      "id": "E4",
+      "difficulty": "easy",
+      "query": "VLAN must exist in database before port assignment",
+      "expected_chunk_id": 18,
+      "expected_source": "rag/manuals/vlan-configuration.md",
+      "note": "vocabulary taken straight from the VLAN-database paragraph"
+    },
+    {
+      "id": "H1",
+      "difficulty": "harder",
+      "query": "If two switches disagree about connection speed settings, could that make one side report garbled data while the other reports early disconnect events, even though the link shows as active on both ends?",
+      "expected_chunk_id": 2,
+      "expected_source": "rag/manuals/interface-error-counters.md",
+      "note": "paraphrases the duplex-mismatch paragraph, avoiding 'duplex/CRC/frame/collision/auto-negotiate' -- but retains incidental overlap ('side', 'link', 'reports', 'settings', 'ends')"
+    },
+    {
+      "id": "H2",
+      "difficulty": "harder",
+      "query": "What happens if the two ends of a link that carries multiple network segments disagree about which segment handles traffic that isn't explicitly labeled?",
+      "expected_chunk_id": 17,
+      "expected_source": "rag/manuals/vlan-configuration.md",
+      "note": "paraphrases the native-VLAN-mismatch paragraph, avoiding 'native/VLAN/802.1Q/trunk/untagged' -- but retains incidental overlap ('ends', 'link', 'disagree', 'traffic')"
+    },
+    {
+      "id": "H3-bonus",
+      "difficulty": "adversarial",
+      "query": "When two connected machines don't concur on transmission rate expectations, one might log garbled incoming data while its counterpart logs a completely different category of fault, even though the connection status still reads as active on each machine.",
+      "expected_chunk_id": 2,
+      "expected_source": "rag/manuals/interface-error-counters.md",
+      "note": "added after H1/H2 both unexpectedly passed -- deliberately engineered for near-zero token overlap with the target chunk, to actually exercise TF-IDF's known no-shared-vocabulary failure mode"
+    }
+  ]
+}
