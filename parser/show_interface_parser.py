@@ -77,7 +77,7 @@ def main() -> int:
 
     try:
         raw_text = args.raw_output_file.read_text()
-    except OSError as e:
+    except (OSError, UnicodeDecodeError) as e:
         print(json.dumps({"error": f"could not read raw output file: {e}"}, indent=2))
         return 2
 
