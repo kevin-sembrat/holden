@@ -1,0 +1,6 @@
+44: eth1@if45: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 9500 qdisc noqueue 
+    link/ether aa:c1:ab:a5:a8:5c brd ff:ff:ff:ff:ff:ff
+    inet 192.0.2.1/30 scope global eth1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::a8c1:abff:fea5:a85c/64 scope link 
+       valid_lft forever preferred_lft forever

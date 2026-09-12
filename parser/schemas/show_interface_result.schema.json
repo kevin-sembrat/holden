@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://holden.local/schemas/show_interface_result.schema.json",
+  "title": "Holden show_interface Parser Result",
+  "description": "Structured output of the Parser/Tool layer for the show_interface action (broker/config/action-catalog.yaml). Vendor-agnostic shape -- populated here from Linux 'ip addr show' output on the Phase 1 test lab nodes, but field meanings are chosen to also hold a future Cisco IOS-XE 'show interface' mapping without a shape change.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["interface", "admin_state", "oper_state", "mac_address", "mtu", "ipv4_addresses", "ipv6_addresses"],
+  "properties": {
+    "interface": {
+      "type": "string",
+      "description": "Interface name as reported by the device, e.g. eth1."
+    },
+    "admin_state": {
+      "type": "string",
+      "enum": ["up", "down"],
+      "description": "Administrative state -- whether the interface is enabled at all (Linux: presence of the UP flag)."
+    },
+    "oper_state": {
+      "type": "string",
+      "enum": ["up", "down"],
+      "description": "Operational (link-layer) state -- whether the interface actually has a carrier (Linux: presence of the LOWER_UP flag). Can be down even when admin_state is up (e.g. unplugged cable)."
+    },
+    "mac_address": {
+      "type": "string",
+      "description": "Interface hardware address."
+    },
+    "mtu": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "ipv4_addresses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["address", "prefix_length"],
+        "properties": {
+          "address": { "type": "string" },
+          "prefix_length": { "type": "integer", "minimum": 0, "maximum": 32 }
+        }
+      }
+    },
+    "ipv6_addresses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["address", "prefix_length", "scope"],
+        "properties": {
+          "address": { "type": "string" },
+          "prefix_length": { "type": "integer", "minimum": 0, "maximum": 128 },
+          "scope": { "type": "string", "description": "e.g. link, global -- as reported by 'ip addr show'." }
+        }
+      }
+    }
+  }
+}

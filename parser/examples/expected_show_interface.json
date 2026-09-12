@@ -1,0 +1,13 @@
+{
+  "interface": "eth1",
+  "admin_state": "up",
+  "oper_state": "up",
+  "mtu": 9500,
+  "mac_address": "aa:c1:ab:a5:a8:5c",
+  "ipv4_addresses": [
+    { "address": "192.0.2.1", "prefix_length": 30 }
+  ],
+  "ipv6_addresses": [
+    { "address": "fe80::a8c1:abff:fea5:a85c", "prefix_length": 64, "scope": "link" }
+  ]
+}
