@@ -394,3 +394,25 @@ No open follow-ups from Phase 1 itself.
    justify keeping it. Deleted via `ollama rm
    hf.co/huihui-ai/Huihui-gpt-oss-20b-BF16-abliterated:Q4_K_M`; `ollama
    list` now shows only `llama3.2:1b`.
+10. **Ollama's daemon phones home on startup by default — needs
+    `OLLAMA_NO_CLOUD=1` before any offline deployment.** Found during
+    Phase 4.1's daemon-level strace verification (2026-09-12): the
+    `ollama serve` process itself, on startup and independent of any
+    inference request, opens an external HTTPS connection
+    (`34.36.133.15:443`, confirmed as `ollama.com` via the literal
+    `ollama.com:443` string embedded in the binary) — this is its
+    "cloud" feature (remote inference + web search + model
+    recommendations), which ships **enabled by default**
+    (`Ollama cloud disabled: false` in its own startup log). Precisely
+    isolated via line position in the strace log: the external connect
+    happens at trace lines 345-358, all inference-request activity
+    (loopback connects to the spawned `llama-server` subprocess) starts
+    at line 1021 — so the specific inference call we tested made zero
+    external calls, but the daemon does, on every start, before any
+    request is made. `OLLAMA_NO_CLOUD` is a real, documented flag
+    (confirmed via `ollama serve --help`: "Disable Ollama cloud features
+    (remote inference and web search)") -- must be set for any run of
+    this daemon used by this project, and re-verified with the same
+    strace method once set. Not yet done -- Phase 4.1's clean-inference
+    result stands, but this is now a known, unresolved gap, not a
+    non-issue.
