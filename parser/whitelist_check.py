@@ -24,9 +24,13 @@ from pathlib import Path
 
 import yaml
 
+from logging_setup import get_logger
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ACTION_CATALOG_PATH = REPO_ROOT / "broker" / "config" / "action-catalog.yaml"
 GLOBAL_DENY_LIST_PATH = REPO_ROOT / "broker" / "config" / "global-deny-list.yaml"
+
+log = get_logger("holden.parser.whitelist_check")
 
 
 class WhitelistError(Exception):
@@ -62,7 +66,10 @@ def check_intent(intent: dict, catalog: dict = None, deny_list: set = None) -> W
     catalog = load_action_catalog() if catalog is None else catalog
     deny_list = load_global_deny_list() if deny_list is None else deny_list
 
+    log.info("checking intent: %s", json.dumps(intent))
+
     if not isinstance(intent, dict) or "action" not in intent:
+        log.error("rejected: malformed intent, missing required 'action' field")
         raise WhitelistError("malformed intent: missing required 'action' field")
 
     action = intent["action"]
@@ -81,13 +88,16 @@ def check_intent(intent: dict, catalog: dict = None, deny_list: set = None) -> W
         )
 
     if reasons:
+        log.warning("rejected action=%r: %s", action, "; ".join(reasons))
         return WhitelistResult(accepted=False, action=action, reasons=reasons)
 
-    return WhitelistResult(
+    result = WhitelistResult(
         accepted=True,
         action=action,
         reasons=[f"'{action}' found in action catalog (tier {catalog[action]['tier']}), not on the deny list"],
     )
+    log.info("accepted action=%r tier=%s", action, catalog[action]["tier"])
+    return result
 
 
 def main() -> int:
@@ -95,9 +105,11 @@ def main() -> int:
     ap.add_argument("intent_file", type=Path, help="Path to a JSON file containing one intent object")
     args = ap.parse_args()
 
+    log.info("reading intent file: %s", args.intent_file)
     try:
         intent = json.loads(args.intent_file.read_text())
     except (OSError, json.JSONDecodeError) as e:
+        log.error("could not read/parse intent file %s: %s", args.intent_file, e)
         print(json.dumps({"accepted": False, "error": f"could not read/parse intent file: {e}"}, indent=2))
         return 2
 

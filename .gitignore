@@ -23,3 +23,6 @@ testing/topologies/clab-*/
 # Python bytecode cache
 __pycache__/
 *.pyc
+
+# Parser/Tool layer runtime logs -- generated per-run, not source
+parser/logs/

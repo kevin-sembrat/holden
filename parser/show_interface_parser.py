@@ -16,6 +16,10 @@ import re
 import sys
 from pathlib import Path
 
+from logging_setup import get_logger
+
+log = get_logger("holden.parser.show_interface_parser")
+
 _HEADER_RE = re.compile(r"^\d+:\s+(?P<iface>\S+?)(@\S+)?:\s+<(?P<flags>[^>]*)>\s+mtu\s+(?P<mtu>\d+)")
 _MAC_RE = re.compile(r"^\s*link/\S+\s+(?P<mac>[0-9a-fA-F:]+)")
 _INET_RE = re.compile(r"^\s*inet\s+(?P<addr>[\d.]+)/(?P<plen>\d+)")
@@ -27,6 +31,7 @@ class ParseError(Exception):
 
 
 def parse_show_interface(raw_text: str) -> dict:
+    log.info("parsing raw output (%d bytes): %s", len(raw_text), json.dumps(raw_text))
     lines = raw_text.splitlines()
 
     header_match = None
@@ -35,6 +40,7 @@ def parse_show_interface(raw_text: str) -> dict:
         if header_match:
             break
     if header_match is None:
+        log.error("parse failed: no interface header line found")
         raise ParseError("no interface header line found (expected '<N>: <iface>: <...flags...> mtu <N> ...')")
 
     flags = set(header_match.group("flags").split(","))
@@ -65,8 +71,10 @@ def parse_show_interface(raw_text: str) -> dict:
             continue
 
     if result["mac_address"] is None:
+        log.error("parse failed: no 'link/...' line found, mac_address undetermined")
         raise ParseError("no 'link/...' line found -- could not determine mac_address")
 
+    log.info("parsed successfully: %s", json.dumps(result))
     return result
 
 
@@ -75,9 +83,11 @@ def main() -> int:
     ap.add_argument("raw_output_file", type=Path, help="Path to a text file containing raw command output")
     args = ap.parse_args()
 
+    log.info("reading raw output file: %s", args.raw_output_file)
     try:
         raw_text = args.raw_output_file.read_text()
     except (OSError, UnicodeDecodeError) as e:
+        log.error("could not read raw output file %s: %s", args.raw_output_file, e)
         print(json.dumps({"error": f"could not read raw output file: {e}"}, indent=2))
         return 2
 
