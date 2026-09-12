@@ -394,25 +394,45 @@ No open follow-ups from Phase 1 itself.
    justify keeping it. Deleted via `ollama rm
    hf.co/huihui-ai/Huihui-gpt-oss-20b-BF16-abliterated:Q4_K_M`; `ollama
    list` now shows only `llama3.2:1b`.
-10. **Ollama's daemon phones home on startup by default — needs
-    `OLLAMA_NO_CLOUD=1` before any offline deployment.** Found during
-    Phase 4.1's daemon-level strace verification (2026-09-12): the
-    `ollama serve` process itself, on startup and independent of any
-    inference request, opens an external HTTPS connection
-    (`34.36.133.15:443`, confirmed as `ollama.com` via the literal
-    `ollama.com:443` string embedded in the binary) — this is its
-    "cloud" feature (remote inference + web search + model
-    recommendations), which ships **enabled by default**
-    (`Ollama cloud disabled: false` in its own startup log). Precisely
-    isolated via line position in the strace log: the external connect
-    happens at trace lines 345-358, all inference-request activity
-    (loopback connects to the spawned `llama-server` subprocess) starts
-    at line 1021 — so the specific inference call we tested made zero
-    external calls, but the daemon does, on every start, before any
-    request is made. `OLLAMA_NO_CLOUD` is a real, documented flag
-    (confirmed via `ollama serve --help`: "Disable Ollama cloud features
-    (remote inference and web search)") -- must be set for any run of
-    this daemon used by this project, and re-verified with the same
-    strace method once set. Not yet done -- Phase 4.1's clean-inference
-    result stands, but this is now a known, unresolved gap, not a
-    non-issue.
+10. **Ollama's daemon phones home on startup by default** — ~~found,
+    fix identified but not yet applied~~ **Resolved and verified
+    2026-09-12.** Phase 4.1's daemon-level strace found the `ollama
+    serve` process itself, on startup and independent of any inference
+    request, opening an external HTTPS connection (`34.36.133.15:443`,
+    confirmed as `ollama.com` via the literal `ollama.com:443` string
+    embedded in the binary) — its "cloud" feature (remote inference +
+    web search + model recommendations), enabled by default
+    (`Ollama cloud disabled: false`).
+
+    **Fix, applied and made persistent:** `sudo snap set ollama
+    no-cloud=1`. This isn't a manually-exported env var (which would be
+    session-scoped and lost on reboot) -- it's the snap's own
+    first-class config mechanism: `/snap/ollama/131/bin/snap_launcher.sh`
+    reads `snapctl get no-cloud` on every single invocation (both the
+    normal systemd-managed service, unit `snap.ollama.listener.service`,
+    and a manual `snap run ollama serve`) and exports `OLLAMA_NO_CLOUD`
+    from it accordingly, so setting it once via `snap set` covers both
+    paths permanently, with no separate persistence step needed.
+
+    **Verification, before/after, same method both times** (stop the
+    snap service, launch manually under `strace -f -e trace=network,connect`,
+    run the identical inference request, grep the log):
+    - *Before* (no-cloud unset, default `false`): log showed
+      `connect()` to `34.36.133.15:443` at trace lines 345-358, well
+      before any inference activity (which starts at line 1021,
+      loopback-only to the spawned `llama-server` subprocess).
+    - *After* (`no-cloud=1` set): confirmed `OLLAMA_NO_CLOUD:true` and
+      `Ollama cloud disabled: true` in the daemon's own startup log
+      before even running the inference test; ran the identical
+      inference request; grepped the resulting strace log (1133 lines)
+      for any `connect()` outside loopback/AF_UNIX --
+      **zero matches, including zero occurrences of `34.36.133.15`
+      anywhere in the log** (not reduced -- gone).
+    - **Persistence confirmed against the *normal* service**, not just
+      the manual test instance: after killing the manual instance and
+      running a plain `sudo snap start ollama` (no manual env export),
+      `journalctl -u snap.ollama.listener.service` shows the same
+      `OLLAMA_NO_CLOUD:true` / `Ollama cloud disabled: true` on that
+      normal restart, and inference still returns correctly. The fix
+      survives a normal restart because it lives in snapd's persisted
+      config, not in any shell session.
