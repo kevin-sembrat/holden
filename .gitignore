@@ -19,3 +19,7 @@ CLAUDE.md
 # containerlab-generated per-run lab state (SSH configs, TLS material,
 # inventories) -- regenerated on every deploy, not source
 testing/topologies/clab-*/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
