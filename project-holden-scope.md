@@ -20,9 +20,9 @@ Credential/RBAC Architecture below).
 |---|-------|----------|-------------|
 | 0 | Threat model & credential architecture — **complete 2026-09-10, one follow-up tracked** | Trust boundaries, RBAC model, credential lifecycle (see below) | — (do first) |
 | 1 | Testing harness — **complete 2026-09-10, checklist 1.1–1.5** | Containerlab-based virtual networks with scriptable, scoreable fault injection | Phase 0 |
-| 2 | Parser/Tool layer | Whitelisted low-level device ops; binary/CLI output → structured text | Phase 1 |
-| 3 | RAG knowledge base | Indexed vendor manuals in a local vector store; retrieval tuned for protocol/error lookups | Parallel with Phase 2 |
-| 4 | Reasoning core (SLM) | Diagnosis + structured report generation from parsed output + RAG context | Phases 2 & 3 |
+| 2 | Parser/Tool layer — **complete 2026-09-12, checklist 2.1–2.4** | Whitelisted low-level device ops; binary/CLI output → structured text | Phase 1 |
+| 3 | RAG knowledge base — **complete 2026-09-12, checklist 3.1–3.4** | Indexed vendor manuals in a local vector store; retrieval tuned for protocol/error lookups | Parallel with Phase 2 |
+| 4 | Reasoning core (SLM) — **in progress, checklist 4.1–4.2 done** | Diagnosis + structured report generation from parsed output + RAG context | Phases 2 & 3 |
 | 5 | Remediation proposal + approval loop | Agent proposes fixes; human approves / denies+feedback | Phase 4 |
 | 6 | Execution broker + console-in | Approved diffs applied via scoped, short-lived credentials | Phase 5, hard dependency on Phase 0 |
 | 7 | Closed-loop verification | Re-test post-change, confirm fix or escalate | Phase 6 |
@@ -320,6 +320,60 @@ any fresh checkout or after pruning the `holden-smoke-node` image.
 
 **Phase 1 is now fully complete, including this regression's resolution.**
 No open follow-ups from Phase 1 itself.
+
+---
+
+## Reasoning Core (Phase 4)
+
+### Session summary — 2026-09-12, for the next session to pick up cleanly
+
+**Done this session (checklist 4.1–4.2):**
+- **4.1 — local model runs offline.** Ollama was already installed on
+  `cyber` (snap, already running as a service) but with no small model
+  pulled and one unrelated, unused, safety-stripped 20B model present
+  (removed -- see Open Decision #9). Pulled `llama3.2:1b` and confirmed
+  inference works end-to-end (`curl .../api/generate` → `"OK"`).
+  Daemon-level strace (not just the client) found `ollama serve` phones
+  home to `ollama.com` on startup by default (`OLLAMA_NO_CLOUD=false`);
+  fixed persistently via `sudo snap set ollama no-cloud=1` and verified
+  both that the connection is gone and that the fix survives a normal
+  `sudo snap start ollama` with no manual env export -- see Open
+  Decision #10 for the full before/after.
+- **4.2 — structured diagnosis output.** `reasoning/diagnose.py` prompts
+  `llama3.2:1b` with a hand-crafted `show_interface` fault scenario
+  (`reasoning/examples/show_interface_high_crc.json`, extended
+  `parser/schemas/show_interface_result.schema.json` with an optional
+  `counters` field to support it) and validates the output against a
+  new `reasoning/schemas/diagnosis_result.schema.json` (deliberately not
+  `intent.schema.json` -- a diagnosis isn't a device-action request).
+  Real, measured reliability findings, not assumed: a 1B model doesn't
+  reliably produce valid+grounded JSON on the first try (took 3/5
+  attempts in the last clean run; failure modes included copying an
+  in-prompt example verbatim, malformed JSON, and duplicate keys
+  silently corrupting a value via plain `json.loads`). Built a bounded
+  retry loop plus four layered checks (well-formed/no-duplicate-keys,
+  jsonschema, content-grounded-in-real-input, catalog-valid
+  `recommended_action`) to catch this. **Even a fully-valid, fully-passing
+  diagnosis was still factually wrong** (concluded "mtu mismatch" from
+  an unremarkable MTU value, missing the actual duplex-mismatch
+  signature) -- schema validity is a necessary but not sufficient
+  condition for a correct diagnosis.
+
+**Explicitly NOT yet done -- do not assume otherwise next session:**
+- **No RAG grounding in the reasoning prompt.** 4.2's diagnosis was
+  produced from parser output alone; the RAG corpus/index from Phase 3
+  was never queried or injected into the prompt. This is very likely
+  *why* the model got the wrong root cause in 4.2's example -- a strong,
+  evidence-based case for making RAG integration the next thing to spec,
+  not a formality.
+- **No report generation.** Nothing yet turns a `diagnosis_result` into
+  the human-readable report described in the Vision/Phase table.
+- **No end-to-end pipeline.** Fault injection (Phase 1's containerlab
+  harness) → parsing (Phase 2) → retrieval (Phase 3) → diagnosis (Phase
+  4) have each only been exercised in isolation, with hand-crafted
+  fixtures at each boundary. They have never been run as one connected
+  flow against a live fault in the lab. That end-to-end wiring is
+  unstarted.
 
 ---
 
